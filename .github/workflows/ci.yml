@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-24.04
     services:
       redis:
-        image: redis:7.4.2-alpine@sha256:de13e74e14b98eb96bdf886791ae47686c3c5d29f9d5f85ea55206843e3fce26
+        image: redis:8.4.0-alpine@sha256:6cbef353e480a8a6e7f10ec545f13d7d3fa85a212cdcc5ffaf5a1c818b9d3798
         ports:
           - 6379:6379
         options: >-
