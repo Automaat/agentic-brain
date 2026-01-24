@@ -14,7 +14,6 @@ jobs:
 
       - uses: jdx/mise-action@v2.1.5
         with:
-          version: 2024.12.19
           install: true
           cache: true
 
@@ -59,7 +58,6 @@ jobs:
 
       - uses: jdx/mise-action@v2.1.5
         with:
-          version: 2024.12.19
           install: true
           cache: true
 
