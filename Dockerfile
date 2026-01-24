@@ -6,7 +6,7 @@ WORKDIR /app
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gcc=4:13.2.0-7 \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
