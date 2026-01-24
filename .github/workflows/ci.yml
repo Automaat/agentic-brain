@@ -81,7 +81,7 @@ jobs:
           HOMELAB_TAILSCALE_IP: 127.0.0.1
 
       - name: Upload coverage
-        uses: codecov/codecov-action@cb6530fbecd68d5f1ee7a3dcd113450ea8d5d6d4 # v5.1.2
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           file: ./coverage.xml
           fail_ci_if_error: true
