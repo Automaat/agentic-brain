@@ -1,0 +1,96 @@
+[tools]
+python = "3.12.8"
+uv = "0.9.26"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.setup]
+description = "Initial setup"
+run = """
+brew install orbstack redis
+brew services start redis
+uv sync
+echo "Setup complete! Next: mise run build && mise run up"
+"""
+
+[tasks.sync]
+description = "Sync Python dependencies"
+run = "uv sync"
+
+[tasks.build]
+description = "Build Docker image"
+run = "docker compose build"
+
+[tasks.up]
+description = "Start brain service"
+run = """
+docker compose up -d
+echo "Brain: http://localhost:8000"
+echo "Health: mise run health"
+"""
+
+[tasks.down]
+description = "Stop brain"
+run = "docker compose down"
+
+[tasks.restart]
+description = "Restart brain"
+run = "docker compose restart brain"
+
+[tasks.logs]
+description = "View logs"
+run = "docker compose logs -f brain"
+
+[tasks.shell]
+description = "Shell into container"
+run = "docker compose exec brain /bin/bash"
+
+[tasks.test]
+description = "Run tests"
+run = "docker compose exec brain pytest tests/ -v"
+
+[tasks.clean]
+description = "Remove containers/images"
+run = """
+docker compose down -v
+docker image prune -f
+"""
+
+[tasks.health]
+description = "Health check"
+run = "curl -s http://localhost:8000/health | jq"
+
+[tasks.chat]
+description = "Test chat"
+run = """
+curl -X POST http://localhost:8000/chat \
+  -H "user_id: test" \
+  -H "session_id: test" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello", "interface": "api", "language": "en"}' | jq
+"""
+
+[tasks.stats]
+description = "Resource usage"
+run = "docker stats brain-service --no-stream"
+
+[tasks.redis-cli]
+description = "Redis CLI"
+run = "redis-cli"
+
+[tasks.lint]
+description = "Run linters"
+run = """
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
+uv run mypy src/
+uv run pyrefly check src/
+"""
+
+[tasks.format]
+description = "Format code"
+run = """
+uv run ruff check --fix src/ tests/
+uv run ruff format src/ tests/
+"""
