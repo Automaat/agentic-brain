@@ -155,8 +155,6 @@ def test_chat_passes_all_parameters(client, mock_state_manager, mock_agent):
 
 
 async def test_lifespan_shutdown():
-    from contextlib import asynccontextmanager
-
     from src.main import lifespan
 
     mock_app = MagicMock()
