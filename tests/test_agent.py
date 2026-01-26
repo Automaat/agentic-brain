@@ -105,3 +105,72 @@ def test_build_system_prompt(agent):
 
     prompt_api = agent._build_system_prompt("api", "en")
     assert len(prompt_api) > 0
+
+
+async def test_chat_error_handling(agent):
+    # Make the graph raise an exception
+    agent.graph.ainvoke = AsyncMock(side_effect=Exception("Test error"))
+
+    response = await agent.chat(
+        message="Test",
+        history=[],
+        user_id="user-1",
+        session_id="session-1",
+        interface="api",
+        language="en",
+    )
+
+    assert "An error occurred" in response
+    assert "Test error" in response
+
+
+async def test_chat_empty_response(agent):
+    # Mock graph to return empty messages
+    agent.graph.ainvoke = AsyncMock(return_value={"messages": []})
+
+    response = await agent.chat(
+        message="Test",
+        history=[],
+        user_id="user-1",
+        session_id="session-1",
+        interface="api",
+        language="en",
+    )
+
+    assert response == "I apologize, I couldn't generate a response."
+
+
+async def test_chat_empty_content(agent):
+    # Mock graph to return message with empty content
+    agent.graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="")]})
+
+    response = await agent.chat(
+        message="Test",
+        history=[],
+        user_id="user-1",
+        session_id="session-1",
+        interface="api",
+        language="en",
+    )
+
+    assert response == "I apologize, I couldn't generate a response."
+
+
+def test_should_continue_with_tool_calls(agent):
+    from langchain_core.messages import ToolCall
+
+    # Create message with tool calls
+    message_with_tools = AIMessage(
+        content="Using tools",
+        tool_calls=[ToolCall(name="test_tool", args={}, id="123", type="tool_call")],
+    )
+
+    result = agent._should_continue({"messages": [message_with_tools]})
+    assert result == "continue"
+
+
+def test_should_continue_without_tool_calls(agent):
+    message_without_tools = AIMessage(content="No tools needed")
+
+    result = agent._should_continue({"messages": [message_without_tools]})
+    assert result == "end"
