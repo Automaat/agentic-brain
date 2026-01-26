@@ -203,3 +203,51 @@ async def test_multiple_tools_same_server(mcp_manager):
 
     assert len(tools) == 3
     assert all(t["server"] == "filesystem" for t in tools)
+
+
+async def test_get_available_tools_cache_hit(mcp_manager):
+    mcp_manager.tools = {"server1": [{"name": "tool1"}]}
+
+    # First call - cache miss
+    tools1 = await mcp_manager.get_available_tools()
+    assert len(tools1) == 1
+    assert mcp_manager._tools_cache is not None
+
+    # Modify tools dict
+    mcp_manager.tools = {"server1": [{"name": "tool1"}, {"name": "tool2"}]}
+
+    # Second call - cache hit (should return cached value, not updated tools)
+    tools2 = await mcp_manager.get_available_tools()
+    assert len(tools2) == 1  # Still returns cached value
+    assert tools2 == tools1
+
+
+async def test_cache_invalidation_on_connect(mcp_manager):
+    mcp_manager.tools = {"server1": [{"name": "tool1"}]}
+
+    # First call - populate cache
+    tools1 = await mcp_manager.get_available_tools()
+    assert len(tools1) == 1
+    assert mcp_manager._tools_cache is not None
+
+    # Call connect_all which should invalidate cache
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"tools": [{"name": "tool1"}, {"name": "tool2"}]}
+
+    with patch.object(mcp_manager.client, "get", new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = mock_response
+        await mcp_manager.connect_all()
+
+    # Cache should be invalidated
+    assert mcp_manager._tools_cache is None
+
+
+def test_get_endpoint(mcp_manager):
+    url = "http://localhost:8001/sse"
+    result = mcp_manager._get_endpoint(url, "tools")
+    assert result == "http://localhost:8001/tools"
+
+    url2 = "https://example.com:8080/sse"
+    result2 = mcp_manager._get_endpoint(url2, "call")
+    assert result2 == "https://example.com:8080/call"

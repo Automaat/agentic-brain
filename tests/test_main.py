@@ -152,3 +152,21 @@ def test_chat_passes_all_parameters(client, mock_state_manager, mock_agent):
         interface="voice",
         language="pl",
     )
+
+
+async def test_lifespan_shutdown():
+    from contextlib import asynccontextmanager
+
+    from src.main import lifespan
+
+    mock_app = MagicMock()
+
+    with patch("src.main.mcp_manager") as mock_mcp:
+        mock_mcp.connect_all = AsyncMock()
+        mock_mcp.close = AsyncMock()
+
+        async with lifespan(mock_app):
+            mock_mcp.connect_all.assert_called_once()
+            mock_mcp.close.assert_not_called()
+
+        mock_mcp.close.assert_called_once()
