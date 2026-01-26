@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
@@ -26,8 +26,8 @@ agent = BrainAgent(settings.anthropic_api_key, mcp_manager)
 
 class ChatRequest(BaseModel):
     message: str
-    interface: str = "api"
-    language: str = "en"
+    interface: Literal["voice", "telegram", "api"] = "api"
+    language: Literal["pl", "en"] = "en"
 
 
 class ChatResponse(BaseModel):
