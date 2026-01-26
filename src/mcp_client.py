@@ -29,14 +29,14 @@ class MCPManager:
     def _get_endpoint(self, url: str, endpoint: str) -> str:
         """Convert SSE URL to endpoint URL"""
         parsed = urlparse(url)
-        new_path = parsed.path.replace('/sse', f'/{endpoint}')
+        new_path = parsed.path.replace("/sse", f"/{endpoint}")
         return urlunparse(parsed._replace(path=new_path))
 
     async def _discover_tools(self, server_name: str, url: str) -> None:
         """Discover available tools from an MCP server"""
         try:
             # MCP servers expose tools via /tools endpoint
-            response = await self.client.get(self._get_endpoint(url, 'tools'))
+            response = await self.client.get(self._get_endpoint(url, "tools"))
             if response.status_code == 200:
                 tools_data = response.json()
                 self.tools[server_name] = tools_data.get("tools", [])
@@ -50,7 +50,7 @@ class MCPManager:
         if server_name not in self.servers:
             raise ValueError(f"Unknown MCP server: {server_name}")
 
-        url = self._get_endpoint(self.servers[server_name], 'call')
+        url = self._get_endpoint(self.servers[server_name], "call")
         payload = {"tool": tool_name, "arguments": arguments}
 
         try:

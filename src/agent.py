@@ -111,30 +111,18 @@ class BrainAgent:
 
             # Find which server owns this tool
             mcp_tools = await self.mcp_manager.get_available_tools()
-            server_name = next(
-                (t["server"] for t in mcp_tools if t["name"] == tool_name),
-                None
-            )
+            server_name = next((t["server"] for t in mcp_tools if t["name"] == tool_name), None)
 
             if not server_name:
-                results.append(
-                    ToolMessage(
-                        content=f"Error: Tool {tool_name} not found",
-                        tool_call_id=tool_call["id"]
-                    )
-                )
+                results.append(ToolMessage(content=f"Error: Tool {tool_name} not found", tool_call_id=tool_call["id"]))
                 continue
 
             try:
                 result = await self.mcp_manager.call_tool(server_name, tool_name, args)
-                results.append(
-                    ToolMessage(content=str(result), tool_call_id=tool_call["id"])
-                )
+                results.append(ToolMessage(content=str(result), tool_call_id=tool_call["id"]))
             except Exception as e:
                 logger.error(f"Tool execution failed: {e}", exc_info=True)
-                results.append(
-                    ToolMessage(content=f"Error: {e!s}", tool_call_id=tool_call["id"])
-                )
+                results.append(ToolMessage(content=f"Error: {e!s}", tool_call_id=tool_call["id"]))
 
         return {"messages": results}
 
