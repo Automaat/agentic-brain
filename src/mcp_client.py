@@ -30,9 +30,8 @@ class MCPManager:
         """Convert SSE URL to endpoint URL"""
         parsed = urlparse(url)
         new_path = parsed.path.replace("/sse", f"/{endpoint}")
-        result = urlunparse(parsed._replace(path=new_path))
-        # Ensure result is str (pyrefly type narrowing)
-        return str(result) if result else ""
+        # Build new URL from components
+        return f"{parsed.scheme}://{parsed.netloc}{new_path}"
 
     async def _discover_tools(self, server_name: str, url: str) -> None:
         """Discover available tools from an MCP server"""
