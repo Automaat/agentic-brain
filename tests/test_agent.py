@@ -254,9 +254,7 @@ async def test_execute_tools_success(agent):
     tool_call = ToolCall(name="read_file", args={"path": "/test"}, id="call_123", type="tool_call")
     message_with_tool = AIMessage(content="", tool_calls=[tool_call])
 
-    agent.mcp_manager.get_available_tools = AsyncMock(
-        return_value=[{"name": "read_file", "server": "filesystem"}]
-    )
+    agent.mcp_manager.get_available_tools = AsyncMock(return_value=[{"name": "read_file", "server": "filesystem"}])
     agent.mcp_manager.call_tool = AsyncMock(return_value={"content": "file content"})
 
     state = {"messages": [message_with_tool]}
@@ -290,9 +288,7 @@ async def test_execute_tools_exception(agent):
     tool_call = ToolCall(name="failing_tool", args={}, id="call_789", type="tool_call")
     message_with_tool = AIMessage(content="", tool_calls=[tool_call])
 
-    agent.mcp_manager.get_available_tools = AsyncMock(
-        return_value=[{"name": "failing_tool", "server": "test"}]
-    )
+    agent.mcp_manager.get_available_tools = AsyncMock(return_value=[{"name": "failing_tool", "server": "test"}])
     agent.mcp_manager.call_tool = AsyncMock(side_effect=Exception("Tool execution failed"))
 
     state = {"messages": [message_with_tool]}
