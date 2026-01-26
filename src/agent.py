@@ -1,11 +1,10 @@
 import logging
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
 from typing_extensions import TypedDict
 
 from .config import settings
@@ -44,7 +43,7 @@ class BrainAgent:
 
         # Add nodes
         workflow.add_node("agent", self._call_model)  # type: ignore[no-matching-overload]
-        workflow.add_node("tools", ToolNode([]))  # MCP tools will be added dynamically
+        workflow.add_node("tools", self._execute_tools)  # type: ignore[no-matching-overload]
 
         # Set entry point
         workflow.set_entry_point("agent")
@@ -64,11 +63,80 @@ class BrainAgent:
 
         return workflow.compile()
 
+    def _convert_mcp_tools_to_langchain(self, mcp_tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Convert MCP tool format to LangChain tool schema"""
+        lc_tools = []
+        for tool in mcp_tools:
+            # MCP format: {name, description, inputSchema, server}
+            # LangChain needs: dict with type="function" and function schema
+            lc_tool = {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool.get("description", ""),
+                    "parameters": tool.get("inputSchema", {"type": "object", "properties": {}}),
+                },
+            }
+            lc_tools.append(lc_tool)
+        return lc_tools
+
     async def _call_model(self, state: AgentState) -> dict[str, Any]:
-        """Call the Claude model"""
+        """Call Claude with dynamically bound MCP tools"""
         messages = state["messages"]
-        response = await self.model.ainvoke(messages)
+
+        # Get MCP tools and bind to model
+        mcp_tools = await self.mcp_manager.get_available_tools()
+        if mcp_tools:
+            lc_tools = self._convert_mcp_tools_to_langchain(mcp_tools)
+            model_with_tools = self.model.bind_tools(lc_tools)
+            response = await model_with_tools.ainvoke(messages)
+        else:
+            response = await self.model.ainvoke(messages)
+
         return {"messages": [response]}
+
+    async def _execute_tools(self, state: AgentState) -> dict[str, Any]:
+        """Execute MCP tool calls"""
+        messages = state["messages"]
+        last_message = messages[-1]
+
+        if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
+            return {"messages": []}
+
+        # Execute each tool call via MCP
+        results = []
+        for tool_call in last_message.tool_calls:
+            tool_name = tool_call["name"]
+            args = tool_call.get("args", {})
+
+            # Find which server owns this tool
+            mcp_tools = await self.mcp_manager.get_available_tools()
+            server_name = next(
+                (t["server"] for t in mcp_tools if t["name"] == tool_name),
+                None
+            )
+
+            if not server_name:
+                results.append(
+                    ToolMessage(
+                        content=f"Error: Tool {tool_name} not found",
+                        tool_call_id=tool_call["id"]
+                    )
+                )
+                continue
+
+            try:
+                result = await self.mcp_manager.call_tool(server_name, tool_name, args)
+                results.append(
+                    ToolMessage(content=str(result), tool_call_id=tool_call["id"])
+                )
+            except Exception as e:
+                logger.error(f"Tool execution failed: {e}", exc_info=True)
+                results.append(
+                    ToolMessage(content=f"Error: {e!s}", tool_call_id=tool_call["id"])
+                )
+
+        return {"messages": results}
 
     def _should_continue(self, state: AgentState) -> str:
         """Determine if we should continue to tools or end"""
@@ -118,6 +186,8 @@ You can help with tasks, answer questions, and interact with connected services.
                 messages.append(AIMessage(content=content))
             elif role == "system":
                 messages.append(SystemMessage(content=content))
+            else:
+                logger.warning("Unrecognized role '%s', skipping: %r", role, msg)
 
         return messages
 
@@ -127,8 +197,8 @@ You can help with tasks, answer questions, and interact with connected services.
         history: list[dict[str, Any]],
         user_id: str,
         session_id: str,
-        interface: str,
-        language: str,
+        interface: Literal["voice", "telegram", "api"],
+        language: Literal["pl", "en"],
     ) -> str:
         """Process a chat message through the agentic loop"""
         try:
@@ -156,17 +226,11 @@ You can help with tasks, answer questions, and interact with connected services.
             final_messages = result["messages"]
             if final_messages:
                 last_message = final_messages[-1]
-                if isinstance(last_message, AIMessage):
-                    content = last_message.content
-                    return str(content) if content else "I apologize, I couldn't generate a response."
-                return (
-                    str(last_message.content)
-                    if last_message.content
-                    else "I apologize, I couldn't generate a response."
-                )
+                content = getattr(last_message, "content", None)
+                return str(content) if content else "I apologize, I couldn't generate a response."
 
             return "I apologize, I couldn't generate a response."
 
         except Exception as e:
             logger.error(f"Error in chat: {e}", exc_info=True)
-            return f"An error occurred: {e!s}"
+            return "I apologize, I couldn't generate a response. Please try again."

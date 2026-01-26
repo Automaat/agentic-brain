@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 
@@ -13,9 +14,11 @@ class MCPManager:
         self.servers = servers
         self.tools: dict[str, Any] = {}
         self.client = httpx.AsyncClient(timeout=30.0)
+        self._tools_cache: list[dict[str, Any]] | None = None
 
     async def connect_all(self) -> None:
         """Connect to all configured MCP servers and discover tools"""
+        self._tools_cache = None  # Invalidate cache
         for name, url in self.servers.items():
             try:
                 await self._discover_tools(name, url)
@@ -23,11 +26,17 @@ class MCPManager:
             except Exception as e:
                 logger.warning(f"Failed to connect to {name} at {url}: {e}")
 
+    def _get_endpoint(self, url: str, endpoint: str) -> str:
+        """Convert SSE URL to endpoint URL"""
+        parsed = urlparse(url)
+        new_path = parsed.path.replace('/sse', f'/{endpoint}')
+        return urlunparse(parsed._replace(path=new_path))
+
     async def _discover_tools(self, server_name: str, url: str) -> None:
         """Discover available tools from an MCP server"""
         try:
             # MCP servers expose tools via /tools endpoint
-            response = await self.client.get(f"{url.replace('/sse', '/tools')}")
+            response = await self.client.get(self._get_endpoint(url, 'tools'))
             if response.status_code == 200:
                 tools_data = response.json()
                 self.tools[server_name] = tools_data.get("tools", [])
@@ -41,7 +50,7 @@ class MCPManager:
         if server_name not in self.servers:
             raise ValueError(f"Unknown MCP server: {server_name}")
 
-        url = self.servers[server_name].replace("/sse", "/call")
+        url = self._get_endpoint(self.servers[server_name], 'call')
         payload = {"tool": tool_name, "arguments": arguments}
 
         try:
@@ -54,12 +63,17 @@ class MCPManager:
 
     async def get_available_tools(self) -> list[dict[str, Any]]:
         """Get all available tools across all connected servers"""
+        if self._tools_cache is not None:
+            return self._tools_cache
+
         all_tools = []
         for server_name, tools in self.tools.items():
             for tool in tools:
                 tool_copy = tool.copy()
                 tool_copy["server"] = server_name
                 all_tools.append(tool_copy)
+
+        self._tools_cache = all_tools
         return all_tools
 
     async def close(self) -> None:

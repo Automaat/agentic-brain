@@ -24,7 +24,7 @@ def test_settings_defaults():
         assert settings.redis_db == 0
         assert settings.brain_host == "0.0.0.0"
         assert settings.brain_port == 8000
-        assert settings.default_model == "claude-sonnet-4.5-20250929"
+        assert settings.default_model == "claude-sonnet-4-5-20250929"
         assert settings.max_tokens == 4096
         assert settings.temperature == 0.7
         assert settings.todoist_api_token == ""

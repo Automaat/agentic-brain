@@ -14,6 +14,7 @@ from .state import StateManager
 async def lifespan(app: FastAPI):  # type: ignore
     await mcp_manager.connect_all()
     yield
+    await mcp_manager.close()
 
 
 app = FastAPI(title="Brain Service", version="1.0.0", lifespan=lifespan)

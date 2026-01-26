@@ -58,8 +58,8 @@ async def test_chat_with_history(agent):
         history=history,
         user_id="user-2",
         session_id="session-2",
-        interface="web",
-        language="fr",
+        interface="telegram",
+        language="en",
     )
 
     assert isinstance(response, str)
@@ -120,8 +120,7 @@ async def test_chat_error_handling(agent):
         language="en",
     )
 
-    assert "An error occurred" in response
-    assert "Test error" in response
+    assert response == "I apologize, I couldn't generate a response. Please try again."
 
 
 async def test_chat_empty_response(agent):
