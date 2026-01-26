@@ -159,7 +159,11 @@ You can help with tasks, answer questions, and interact with connected services.
                 if isinstance(last_message, AIMessage):
                     content = last_message.content
                     return str(content) if content else "I apologize, I couldn't generate a response."
-                return str(last_message.content) if last_message.content else "I apologize, I couldn't generate a response."
+                return (
+                    str(last_message.content)
+                    if last_message.content
+                    else "I apologize, I couldn't generate a response."
+                )
 
             return "I apologize, I couldn't generate a response."
 
