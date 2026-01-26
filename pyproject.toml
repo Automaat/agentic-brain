@@ -26,6 +26,9 @@ dev = [
     "pyrefly==0.49.0",
     "types-redis>=4.6.0",
 ]
+telegram = [
+    "python-telegram-bot[all]>=22.0",
+]
 
 [build-system]
 requires = ["hatchling"]

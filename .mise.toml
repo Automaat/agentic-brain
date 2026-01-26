@@ -91,6 +91,67 @@ uv run pyrefly check src/
 [tasks.format]
 description = "Format code"
 run = """
-uv run ruff check --fix src/ tests/
-uv run ruff format src/ tests/
+uv run ruff check --fix src/ tests/ interfaces/
+uv run ruff format src/ tests/ interfaces/
 """
+
+# Telegram bot tasks
+[tasks."telegram:install"]
+description = "Install telegram bot dependencies"
+run = "uv sync --extra telegram"
+
+[tasks."telegram:start"]
+description = "Start telegram bot"
+run = """
+cd interfaces/telegram
+uv run --extra telegram python -m bot
+"""
+
+[tasks."telegram:install-service"]
+description = "Install telegram bot as LaunchAgent (macOS)"
+run = """
+mkdir -p ~/Library/LaunchAgents
+cat > ~/Library/LaunchAgents/com.agentic-brain.telegram-bot.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.agentic-brain.telegram-bot</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd $HOME/sideprojects/agentic-brain/interfaces/telegram && source $HOME/sideprojects/agentic-brain/.venv/bin/activate && python -m bot</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$HOME/sideprojects/agentic-brain/logs/telegram-bot.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/sideprojects/agentic-brain/logs/telegram-bot.error.log</string>
+    <key>WorkingDirectory</key>
+    <string>$HOME/sideprojects/agentic-brain/interfaces/telegram</string>
+</dict>
+</plist>
+EOF
+echo "LaunchAgent installed. Use 'mise run telegram:service:start' to start."
+"""
+
+[tasks."telegram:service:start"]
+description = "Start telegram bot service"
+run = "launchctl load ~/Library/LaunchAgents/com.agentic-brain.telegram-bot.plist"
+
+[tasks."telegram:service:stop"]
+description = "Stop telegram bot service"
+run = "launchctl unload ~/Library/LaunchAgents/com.agentic-brain.telegram-bot.plist"
+
+[tasks."telegram:service:status"]
+description = "Check telegram bot service status"
+run = "launchctl list | grep telegram-bot || echo 'Service not running'"
+
+[tasks."telegram:logs"]
+description = "View telegram bot logs"
+run = "tail -f logs/telegram-bot.log"

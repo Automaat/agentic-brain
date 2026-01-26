@@ -19,7 +19,11 @@ mise run chat
 
 ## Architecture
 
-Central "brain" service with pluggable interfaces (HA voice, Telegram, etc.)
+Central "brain" service with pluggable interfaces:
+
+- **Brain Service** (Docker): FastAPI + LangGraph + Claude API + MCP
+- **Telegram Bot** (Mac): Text interface
+- **Home Assistant** (Homelab): Voice interface (planned)
 
 See [plan.md](plan.md) for full details.
 
@@ -31,6 +35,27 @@ mise run test      # Run tests
 mise run lint      # Run linters
 mise run format    # Format code
 ```
+
+## Interfaces
+
+### Telegram Bot
+
+```bash
+# Setup
+mise run telegram:install
+cd interfaces/telegram
+cp .env.example .env
+# Edit .env with your bot token
+
+# Run
+mise run telegram:start
+
+# Auto-start on macOS
+mise run telegram:install-service
+mise run telegram:service:start
+```
+
+See [interfaces/telegram/README.md](interfaces/telegram/README.md) for details.
 
 ## Requirements
 
