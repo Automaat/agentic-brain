@@ -122,7 +122,7 @@ def test_reset_session_missing_header(client):
 def test_chat_custom_interface(client, mock_state_manager, mock_agent):
     response = client.post(
         "/chat",
-        json={"message": "Test", "interface": "telegram", "language": "es"},
+        json={"message": "Test", "interface": "telegram", "language": "pl"},
         headers={"user-id": "user-1", "session-id": "session-1"},
     )
 
@@ -130,7 +130,7 @@ def test_chat_custom_interface(client, mock_state_manager, mock_agent):
     mock_agent.chat.assert_called_once()
     call_kwargs = mock_agent.chat.call_args[1]
     assert call_kwargs["interface"] == "telegram"
-    assert call_kwargs["language"] == "es"
+    assert call_kwargs["language"] == "pl"
 
 
 def test_chat_passes_all_parameters(client, mock_state_manager, mock_agent):
@@ -139,7 +139,7 @@ def test_chat_passes_all_parameters(client, mock_state_manager, mock_agent):
 
     response = client.post(
         "/chat",
-        json={"message": "New message", "interface": "web", "language": "fr"},
+        json={"message": "New message", "interface": "voice", "language": "pl"},
         headers={"user-id": "user-abc", "session-id": "session-xyz"},
     )
 
@@ -149,6 +149,22 @@ def test_chat_passes_all_parameters(client, mock_state_manager, mock_agent):
         history=history,
         user_id="user-abc",
         session_id="session-xyz",
-        interface="web",
-        language="fr",
+        interface="voice",
+        language="pl",
     )
+
+
+async def test_lifespan_shutdown():
+    from src.main import lifespan
+
+    mock_app = MagicMock()
+
+    with patch("src.main.mcp_manager") as mock_mcp:
+        mock_mcp.connect_all = AsyncMock()
+        mock_mcp.close = AsyncMock()
+
+        async with lifespan(mock_app):
+            mock_mcp.connect_all.assert_called_once()
+            mock_mcp.close.assert_not_called()
+
+        mock_mcp.close.assert_called_once()

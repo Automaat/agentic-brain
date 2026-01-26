@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     brain_host: str = "0.0.0.0"
     brain_port: int = 8000
-    default_model: str = "claude-sonnet-4.5-20250929"
+    default_model: str = "claude-sonnet-4-5-20250929"
     max_tokens: int = 4096
     temperature: float = 0.7
 
