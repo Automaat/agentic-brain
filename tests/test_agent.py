@@ -321,3 +321,50 @@ def test_convert_history_with_unknown_role(agent):
         assert messages[0].content == "Hello"
         assert messages[1].content == "Hi"
         mock_logger.warning.assert_called_once()
+
+
+def test_create_llm_model_anthropic():
+    """Test _create_llm_model creates ChatAnthropic with correct params."""
+    mock_mcp = MagicMock()
+    with patch("src.agent.settings") as mock_settings, patch("src.agent.ChatAnthropic") as mock_chat_anthropic:
+        mock_settings.llm_provider = "anthropic"
+        mock_settings.default_model = "claude-sonnet-4-5-20250929"
+        mock_settings.max_tokens = 4096
+        mock_settings.temperature = 0.7
+
+        BrainAgent("test-key", mock_mcp)
+
+        mock_chat_anthropic.assert_called_once_with(
+            api_key="test-key",
+            model_name="claude-sonnet-4-5-20250929",
+            max_tokens=4096,
+            temperature=0.7,
+        )
+
+
+def test_create_llm_model_ollama():
+    """Test _create_llm_model creates ChatOllama with correct params."""
+    mock_mcp = MagicMock()
+    with patch("src.agent.settings") as mock_settings, patch("src.agent.ChatOllama") as mock_chat_ollama:
+        mock_settings.llm_provider = "ollama"
+        mock_settings.ollama_model = "llama3.1:8b"
+        mock_settings.ollama_base_url = "http://localhost:11434"
+        mock_settings.temperature = 0.7
+
+        BrainAgent(None, mock_mcp)
+
+        mock_chat_ollama.assert_called_once_with(
+            model="llama3.1:8b",
+            base_url="http://localhost:11434",
+            temperature=0.7,
+        )
+
+
+def test_create_llm_model_ollama_not_installed():
+    """Test _create_llm_model raises error when langchain-ollama not installed."""
+    mock_mcp = MagicMock()
+    with patch("src.agent.settings") as mock_settings, patch("src.agent.ChatOllama", None):
+        mock_settings.llm_provider = "ollama"
+
+        with pytest.raises(ImportError, match="langchain-ollama not installed"):
+            BrainAgent(None, mock_mcp)

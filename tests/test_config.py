@@ -1,9 +1,6 @@
 import os
 from unittest.mock import patch
 
-import pytest
-from pydantic_core import ValidationError
-
 from src.config import Settings
 
 
@@ -95,7 +92,25 @@ def test_mcp_servers_uses_tailscale_ip():
         assert settings.mcp_servers["homeassistant"] == "http://100.64.0.1:8010/sse"
 
 
-def test_settings_missing_required_field():
+def test_settings_with_no_env_vars():
+    """Test that Settings() succeeds with defaults when no env vars provided."""
     with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValidationError):
-            Settings()  # type: ignore[call-arg]
+        settings = Settings()  # type: ignore[call-arg]
+        assert settings.anthropic_api_key == ""
+        assert settings.homelab_tailscale_ip == ""
+        assert settings.llm_provider == "anthropic"
+        assert settings.ollama_base_url == "http://host.docker.internal:11434"
+        assert settings.ollama_model == "llama3.1:8b"
+
+
+def test_mcp_servers_excludes_homeassistant_when_ip_empty():
+    """Test that homeassistant is excluded when homelab_tailscale_ip is empty."""
+    with patch.dict(os.environ, {}, clear=True):
+        settings = Settings()  # type: ignore[call-arg]
+        mcp_servers = settings.mcp_servers
+        assert "homeassistant" not in mcp_servers
+        assert "filesystem" in mcp_servers
+        assert "shell" in mcp_servers
+        assert "browser" in mcp_servers
+        assert "todoist" in mcp_servers
+        assert len(mcp_servers) == 4

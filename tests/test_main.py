@@ -1,3 +1,4 @@
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -119,6 +120,14 @@ def test_reset_session_missing_header(client):
     assert response.status_code == 422
 
 
+def test_metrics_endpoint(client):
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    # Prometheus CONTENT_TYPE_LATEST includes version info
+    assert response.headers["content-type"] == "text/plain; version=1.0.0; charset=utf-8"
+    assert b"http_requests_total" in response.content or b"# HELP" in response.content
+
+
 def test_chat_custom_interface(client, mock_state_manager, mock_agent):
     response = client.post(
         "/chat",
@@ -168,3 +177,55 @@ async def test_lifespan_shutdown():
             mock_mcp.close.assert_not_called()
 
         mock_mcp.close.assert_called_once()
+
+
+def test_startup_validation_anthropic_missing_key():
+    """Test that ValueError raised when anthropic provider has no API key."""
+    with patch.dict(os.environ, {"LLM_PROVIDER": "anthropic", "ANTHROPIC_API_KEY": ""}, clear=True):
+        with patch("src.main.StateManager"), patch("src.main.MCPManager"), patch("src.main.BrainAgent"):
+            with pytest.raises(ValueError, match="ANTHROPIC_API_KEY required"):
+                import sys
+
+                # Remove cached module
+                if "src.main" in sys.modules:
+                    del sys.modules["src.main"]
+                if "src.config" in sys.modules:
+                    del sys.modules["src.config"]
+
+                import src.main  # noqa: F401
+
+
+def test_startup_validation_anthropic_with_key():
+    """Test that anthropic provider works with API key."""
+    import sys
+
+    # Remove cached modules first
+    for mod in ["src.main", "src.config", "src.agent", "src.state", "src.mcp_client"]:
+        if mod in sys.modules:
+            del sys.modules[mod]
+
+    with patch.dict(
+        os.environ,
+        {"LLM_PROVIDER": "anthropic", "ANTHROPIC_API_KEY": "test-key"},
+        clear=True,
+    ):
+        with patch("src.main.StateManager"), patch("src.main.MCPManager"), patch("src.main.BrainAgent"):
+            import src.main  # noqa: F401
+
+
+def test_startup_validation_ollama_connectivity():
+    """Test that ValueError raised when Ollama server is unreachable."""
+    import sys
+
+    # Remove cached modules first
+    for mod in ["src.main", "src.config", "src.agent", "src.state", "src.mcp_client"]:
+        if mod in sys.modules:
+            del sys.modules[mod]
+
+    with patch.dict(
+        os.environ,
+        {"LLM_PROVIDER": "ollama", "OLLAMA_BASE_URL": "http://unreachable:11434"},
+        clear=True,
+    ):
+        with pytest.raises(ValueError, match="Ollama server not accessible"):
+            import src.main  # noqa: F401

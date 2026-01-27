@@ -1,4 +1,3 @@
-import logging
 from typing import Annotated, Any, Literal, TypedDict
 
 from langchain_anthropic import ChatAnthropic
@@ -6,10 +5,16 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
+try:
+    from langchain_ollama import ChatOllama
+except ImportError:
+    ChatOllama = None  # type: ignore[misc,assignment]
+
 from .config import settings
+from .logging_config import get_logger
 from .mcp_client import MCPManager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AgentState(TypedDict):
@@ -25,16 +30,29 @@ class AgentState(TypedDict):
 class BrainAgent:
     """LangGraph agentic loop with Claude Sonnet 4.5"""
 
-    def __init__(self, api_key: str, mcp_manager: MCPManager):
+    def __init__(self, api_key: str | None, mcp_manager: MCPManager):
         self.api_key = api_key
         self.mcp_manager = mcp_manager
-        self.model = ChatAnthropic(
-            api_key=api_key,
-            model_name=settings.default_model,
-            max_tokens=settings.max_tokens,
-            temperature=settings.temperature,
-        )
+        self.model = self._create_llm_model()
         self.graph = self._build_graph()
+
+    def _create_llm_model(self):
+        """Create LLM model based on configured provider"""
+        if settings.llm_provider == "ollama":
+            if ChatOllama is None:
+                raise ImportError("langchain-ollama not installed")
+            return ChatOllama(
+                model=settings.ollama_model,
+                base_url=settings.ollama_base_url,
+                temperature=settings.temperature,
+            )
+        else:
+            return ChatAnthropic(
+                api_key=self.api_key,
+                model_name=settings.default_model,
+                max_tokens=settings.max_tokens,
+                temperature=settings.temperature,
+            )
 
     def _build_graph(self) -> Any:
         """Build the LangGraph workflow"""
@@ -85,6 +103,12 @@ class BrainAgent:
 
         # Get MCP tools and bind to model
         mcp_tools = await self.mcp_manager.get_available_tools()
+        logger.debug(
+            "Calling model",
+            tool_count=len(mcp_tools),
+            session_id=state.get("session_id"),
+        )
+
         if mcp_tools:
             lc_tools = self._convert_mcp_tools_to_langchain(mcp_tools)
             model_with_tools = self.model.bind_tools(lc_tools)
@@ -117,10 +141,12 @@ class BrainAgent:
                 continue
 
             try:
+                logger.info("Executing tool", tool_name=tool_name, server=server_name)
                 result = await self.mcp_manager.call_tool(server_name, tool_name, args)
                 results.append(ToolMessage(content=str(result), tool_call_id=tool_call["id"]))
+                logger.info("Tool execution succeeded", tool_name=tool_name)
             except Exception as e:
-                logger.error(f"Tool execution failed: {e}", exc_info=True)
+                logger.error("Tool execution failed", tool_name=tool_name, error=str(e), exc_info=True)
                 results.append(ToolMessage(content=f"Error: {e!s}", tool_call_id=tool_call["id"]))
 
         return {"messages": results}
@@ -219,5 +245,5 @@ You can help with tasks, answer questions, and interact with connected services.
             return "I apologize, I couldn't generate a response."
 
         except Exception as e:
-            logger.error(f"Error in chat: {e}", exc_info=True)
+            logger.error("Chat processing failed", session_id=session_id, error=str(e), exc_info=True)
             return "I apologize, I couldn't generate a response. Please try again."

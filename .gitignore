@@ -42,3 +42,6 @@ htmlcov/
 # Temporary
 *.tmp
 *.bak
+
+# Interface configs
+interfaces/telegram/.env
