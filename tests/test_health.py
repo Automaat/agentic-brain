@@ -96,9 +96,10 @@ async def test_check_health_no_mcp_servers() -> None:
 
     result = await check_health(state_manager, mcp_manager)
 
-    assert result["status"] == "degraded"
+    # Zero configured servers treated as healthy (optional component)
+    assert result["status"] == "healthy"
     assert result["components"]["redis"]["status"] == "healthy"
-    assert result["components"]["mcp_servers"]["status"] == "degraded"
+    assert result["components"]["mcp_servers"]["status"] == "healthy"
     assert result["components"]["mcp_servers"]["healthy"] == 0
     assert result["components"]["mcp_servers"]["total"] == 0
 
@@ -117,8 +118,9 @@ async def test_check_health_mcp_server_no_tools() -> None:
 
     result = await check_health(state_manager, mcp_manager)
 
+    # Partial failure = degraded component and overall status
     assert result["status"] == "degraded"
-    assert result["components"]["mcp_servers"]["status"] == "healthy"
+    assert result["components"]["mcp_servers"]["status"] == "degraded"
     assert result["components"]["mcp_servers"]["healthy"] == 1
     assert result["components"]["mcp_servers"]["total"] == 2
     assert result["components"]["mcp_servers"]["servers"]["server1"]["status"] == "healthy"
@@ -139,8 +141,9 @@ async def test_check_health_all_mcp_servers_unhealthy() -> None:
 
     result = await check_health(state_manager, mcp_manager)
 
+    # All servers unhealthy = unhealthy component, degraded overall
     assert result["status"] == "degraded"
-    assert result["components"]["mcp_servers"]["status"] == "degraded"
+    assert result["components"]["mcp_servers"]["status"] == "unhealthy"
     assert result["components"]["mcp_servers"]["healthy"] == 0
 
 

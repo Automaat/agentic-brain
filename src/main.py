@@ -12,6 +12,7 @@ from .health import check_health
 from .logging_config import get_logger, request_id_var, setup_logging
 from .mcp_client import MCPManager
 from .metrics import (
+    CONTENT_TYPE_LATEST,
     chat_duration_seconds,
     chat_errors_total,
     chat_requests_total,
@@ -42,34 +43,37 @@ app = FastAPI(title="Brain Service", version="1.0.0", lifespan=lifespan)
 async def add_request_id_middleware(request: Request, call_next):  # type: ignore
     """Add request ID to context and response headers."""
     request_id = str(uuid.uuid4())
-    request_id_var.set(request_id)
+    token = request_id_var.set(request_id)
 
-    start_time = time.time()
-    response: Response = await call_next(request)
-    duration = time.time() - start_time
+    try:
+        start_time = time.perf_counter()
+        response: Response = await call_next(request)
+        duration = time.perf_counter() - start_time
 
-    response.headers["X-Request-ID"] = request_id
+        response.headers["X-Request-ID"] = request_id
 
-    # Record metrics
-    http_requests_total.labels(
-        method=request.method,
-        endpoint=request.url.path,
-        status=response.status_code,
-    ).inc()
-    http_request_duration_seconds.labels(
-        method=request.method,
-        endpoint=request.url.path,
-    ).observe(duration)
+        # Record metrics
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code,
+        ).inc()
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=request.url.path,
+        ).observe(duration)
 
-    logger.info(
-        "Request completed",
-        method=request.method,
-        path=request.url.path,
-        status_code=response.status_code,
-        duration_ms=round(duration * 1000, 2),
-    )
+        logger.info(
+            "Request completed",
+            method=request.method,
+            path=request.url.path,
+            status_code=response.status_code,
+            duration_ms=round(duration * 1000, 2),
+        )
 
-    return response
+        return response
+    finally:
+        request_id_var.reset(token)
 
 
 state_manager = StateManager(settings.redis_host, settings.redis_port, settings.redis_db)
@@ -98,7 +102,7 @@ async def health():  # type: ignore
 @app.get("/metrics")
 async def metrics() -> Response:
     """Prometheus metrics endpoint."""
-    return Response(content=get_metrics(), media_type="text/plain")
+    return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -122,7 +126,7 @@ async def chat(
         language=request.language,
     ).inc()
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     try:
         history = state_manager.get_conversation(session_id)
@@ -139,7 +143,7 @@ async def chat(
 
         state_manager.add_message(session_id, "assistant", response)
 
-        duration = time.time() - start_time
+        duration = time.perf_counter() - start_time
         chat_duration_seconds.labels(interface=request.interface).observe(duration)
 
         logger.info(

@@ -67,8 +67,18 @@ async def check_health(
                 "message": "No tools discovered",
             }
 
+    # Component status: healthy only if all healthy, degraded if partial, unhealthy if none
+    if mcp_total_count == 0:
+        mcp_component_status = "healthy"  # No servers configured - optional component
+    elif mcp_healthy_count == mcp_total_count:
+        mcp_component_status = "healthy"
+    elif mcp_healthy_count > 0:
+        mcp_component_status = "degraded"
+    else:
+        mcp_component_status = "unhealthy"
+
     health_status["components"]["mcp_servers"] = {
-        "status": "healthy" if mcp_healthy_count > 0 else "degraded",
+        "status": mcp_component_status,
         "healthy": mcp_healthy_count,
         "total": mcp_total_count,
         "servers": mcp_status,
@@ -77,9 +87,7 @@ async def check_health(
     # Overall health
     if not redis_healthy:
         health_status["status"] = "unhealthy"
-    elif mcp_healthy_count == 0:
-        health_status["status"] = "degraded"
-    elif mcp_healthy_count < mcp_total_count:
+    elif mcp_total_count > 0 and mcp_healthy_count < mcp_total_count:
         health_status["status"] = "degraded"
 
     return health_status

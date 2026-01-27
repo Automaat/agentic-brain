@@ -122,7 +122,8 @@ def test_reset_session_missing_header(client):
 def test_metrics_endpoint(client):
     response = client.get("/metrics")
     assert response.status_code == 200
-    assert response.headers["content-type"] == "text/plain; charset=utf-8"
+    # Prometheus CONTENT_TYPE_LATEST includes version info
+    assert response.headers["content-type"] == "text/plain; version=1.0.0; charset=utf-8"
     assert b"http_requests_total" in response.content or b"# HELP" in response.content
 
 

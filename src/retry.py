@@ -4,6 +4,8 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any, TypeVar, cast
 
+import httpx
+from anthropic import APIConnectionError, APITimeoutError, RateLimitError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -35,10 +37,12 @@ def retry_on_network_error(
     """
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        @retry(
+        retry_decorator = retry(
             stop=stop_after_attempt(max_attempts),
             wait=wait_exponential(multiplier=1, min=min_wait_seconds, max=max_wait_seconds),
-            retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+            retry=retry_if_exception_type(
+                (ConnectionError, TimeoutError, httpx.RequestError, httpx.TimeoutException)
+            ),
             reraise=True,
             before_sleep=lambda retry_state: logger.warning(
                 "Retrying after error",
@@ -47,19 +51,24 @@ def retry_on_network_error(
                 error=str(retry_state.outcome.exception()) if retry_state.outcome else None,
             ),
         )
-        @wraps(func)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> T:
-            return await cast(Awaitable[T], func(*args, **kwargs))
-
-        @wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> T:
-            return func(*args, **kwargs)
 
         # Return appropriate wrapper based on function type
         import inspect
 
         if inspect.iscoroutinefunction(func):
+
+            @retry_decorator
+            @wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> T:
+                return await cast(Awaitable[T], func(*args, **kwargs))
+
             return async_wrapper  # type: ignore
+
+        @retry_decorator
+        @wraps(func)
+        def sync_wrapper(*args: Any, **kwargs: Any) -> T:
+            return func(*args, **kwargs)
+
         return sync_wrapper  # type: ignore
 
     return decorator
@@ -82,10 +91,12 @@ def retry_on_anthropic_error(
     """
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        @retry(
+        retry_decorator = retry(
             stop=stop_after_attempt(max_attempts),
             wait=wait_exponential(multiplier=2, min=min_wait_seconds, max=max_wait_seconds),
-            retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+            retry=retry_if_exception_type(
+                (ConnectionError, TimeoutError, APIConnectionError, APITimeoutError, RateLimitError)
+            ),
             reraise=True,
             before_sleep=lambda retry_state: logger.warning(
                 "Retrying Anthropic API call",
@@ -94,19 +105,24 @@ def retry_on_anthropic_error(
                 error=str(retry_state.outcome.exception()) if retry_state.outcome else None,
             ),
         )
-        @wraps(func)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> T:
-            return await cast(Awaitable[T], func(*args, **kwargs))
-
-        @wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> T:
-            return func(*args, **kwargs)
 
         # Return appropriate wrapper based on function type
         import inspect
 
         if inspect.iscoroutinefunction(func):
+
+            @retry_decorator
+            @wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> T:
+                return await cast(Awaitable[T], func(*args, **kwargs))
+
             return async_wrapper  # type: ignore
+
+        @retry_decorator
+        @wraps(func)
+        def sync_wrapper(*args: Any, **kwargs: Any) -> T:
+            return func(*args, **kwargs)
+
         return sync_wrapper  # type: ignore
 
     return decorator

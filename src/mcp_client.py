@@ -72,7 +72,7 @@ class MCPManager:
 
         logger.debug("Calling MCP tool", server=server_name, tool=tool_name, url=url)
 
-        start_time = time.time()
+        start_time = time.perf_counter()
         status = "error"
 
         try:
@@ -92,7 +92,7 @@ class MCPManager:
             )
             raise
         finally:
-            duration = time.time() - start_time
+            duration = time.perf_counter() - start_time
             mcp_tool_calls_total.labels(server=server_name, tool=tool_name, status=status).inc()
             mcp_tool_duration_seconds.labels(server=server_name, tool=tool_name).observe(duration)
 
