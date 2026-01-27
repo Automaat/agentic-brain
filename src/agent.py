@@ -1,10 +1,10 @@
+from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
-from typing_extensions import TypedDict
 
 try:
     from langchain_ollama import ChatOllama
@@ -18,7 +18,8 @@ from .mcp_client import MCPManager
 logger = get_logger(__name__)
 
 
-class AgentState(TypedDict):
+@dataclass
+class AgentState:
     """State for the agent graph"""
 
     messages: Annotated[list[BaseMessage], add_messages]
@@ -100,14 +101,14 @@ class BrainAgent:
 
     async def _call_model(self, state: AgentState) -> dict[str, Any]:
         """Call Claude with dynamically bound MCP tools"""
-        messages = state["messages"]
+        messages = state.messages
 
         # Get MCP tools and bind to model
         mcp_tools = await self.mcp_manager.get_available_tools()
         logger.debug(
             "Calling model",
             tool_count=len(mcp_tools),
-            session_id=state.get("session_id"),
+            session_id=state.session_id,
         )
 
         if mcp_tools:
@@ -121,7 +122,7 @@ class BrainAgent:
 
     async def _execute_tools(self, state: AgentState) -> dict[str, Any]:
         """Execute MCP tool calls"""
-        messages = state["messages"]
+        messages = state.messages
         last_message = messages[-1]
 
         if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
@@ -154,7 +155,7 @@ class BrainAgent:
 
     def _should_continue(self, state: AgentState) -> str:
         """Determine if we should continue to tools or end"""
-        messages = state["messages"]
+        messages = state.messages
         last_message = messages[-1]
 
         # If the last message has tool calls, continue to tools
@@ -225,13 +226,13 @@ You can help with tasks, answer questions, and interact with connected services.
             messages.append(HumanMessage(content=message))
 
             # Create initial state
-            initial_state: AgentState = {
-                "messages": messages,
-                "user_id": user_id,
-                "session_id": session_id,
-                "interface": interface,
-                "language": language,
-            }
+            initial_state = AgentState(
+                messages=messages,
+                user_id=user_id,
+                session_id=session_id,
+                interface=interface,
+                language=language,
+            )
 
             # Run the graph
             result = await self.graph.ainvoke(initial_state)
