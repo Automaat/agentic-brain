@@ -25,8 +25,8 @@ export async function sendMessage(
 	const res = await fetch(`${baseUrl}/chat`, {
 		method: 'POST',
 		headers: {
-			'user_id': userId,
-			'session_id': sessionId,
+			'user-id': userId,
+			'session-id': sessionId,
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
@@ -61,7 +61,7 @@ export async function resetSession(sessionId: string): Promise<void> {
 	await fetch(`${baseUrl}/reset-session`, {
 		method: 'POST',
 		headers: {
-			'session_id': sessionId,
+			'session-id': sessionId,
 			'Content-Type': 'application/json'
 		}
 	});
