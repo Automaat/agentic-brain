@@ -1,6 +1,6 @@
 """Prometheus metrics for monitoring."""
 
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 # Request metrics
 http_requests_total = Counter(
