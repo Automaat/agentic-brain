@@ -76,7 +76,7 @@ def test_mcp_servers_property():
         assert mcp_servers["shell"] == "http://host.docker.internal:8002/sse"
         assert mcp_servers["browser"] == "http://host.docker.internal:8003/sse"
         assert mcp_servers["homeassistant"] == "http://192.168.1.100:8010/sse"
-        assert mcp_servers["todoist"] == "http://host.docker.internal:8011/sse"
+        assert mcp_servers["todoist"] == "http://host.docker.internal:8011/mcp/sse"
 
 
 def test_mcp_servers_uses_tailscale_ip():

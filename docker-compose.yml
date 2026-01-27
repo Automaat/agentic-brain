@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: brain-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   brain:
     build:
       context: .
@@ -30,6 +45,7 @@ services:
       - REDIS_HOST=host.docker.internal
       - REDIS_PORT=6379
       - PYTHONUNBUFFERED=1
+      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -45,3 +61,6 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
+
+volumes:
+  redis-data:

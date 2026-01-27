@@ -426,20 +426,20 @@ REDIS_PORT=6379
 
 ## MCP Servers Setup
 
-### Mac MCP Servers (ToolHive)
+### Mac MCP Servers
 
-```bash
-# Install
-brew install toolhive
+MCP servers run on host machine, accessible from Docker container via `host.docker.internal`:
 
-# Run (bind to localhost for Docker access)
-toolhive run filesystem --bind 127.0.0.1:8001 --allowed-dir ~/Documents
-toolhive run shell --bind 127.0.0.1:8002
-toolhive run browser --bind 127.0.0.1:8003
-toolhive run todoist --bind 127.0.0.1:8011
-```
+**Active servers:**
+- Filesystem (port 8001): File operations on allowed directories
+- Shell (port 8002): Command execution capabilities
+- Browser (port 8003): Web automation and scraping
+- Todoist (port 8011): Task management integration
+- Home Assistant (port 8012): Smart home control (conditional)
 
-**Auto-start**: Create LaunchAgents (see full plan for details)
+**Configuration:** Servers use HTTP SSE protocol. See `src/mcp_client.py` for connection details.
+
+**Port mappings:** All servers bind to `127.0.0.1:<port>` for Docker bridge access.
 
 ## Pluggable Interfaces
 

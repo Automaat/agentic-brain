@@ -75,8 +75,8 @@ run = "curl -s http://localhost:8000/health | jq"
 description = "Test chat"
 run = """
 curl -X POST http://localhost:8000/chat \
-  -H "user_id: test" \
-  -H "session_id: test" \
+  -H "user-id: test" \
+  -H "session-id: test" \
   -H "Content-Type: application/json" \
   -d '{"message": "Hello", "interface": "api", "language": "en"}' | jq
 """
@@ -141,6 +141,30 @@ run = "pkill -f 'ollama serve'"
 [tasks."ollama:list"]
 description = "List installed models"
 run = "ollama list"
+
+[tasks.dev]
+description = "Run locally with Ollama"
+run = """
+# Ensure Ollama is running
+if ! pgrep -f 'ollama serve' > /dev/null; then
+  echo "Starting Ollama..."
+  mkdir -p logs
+  ollama serve > logs/ollama.log 2>&1 &
+  sleep 2
+  if ! pgrep -f 'ollama serve' > /dev/null; then
+    echo "Failed to start Ollama - check logs/ollama.log"
+    exit 1
+  fi
+fi
+
+echo "Brain (Ollama): http://localhost:8000"
+echo "Stop: Ctrl+C then mise run ollama:stop"
+echo ""
+
+# Start Redis and Brain with Ollama provider (logs streaming)
+export LLM_PROVIDER=ollama
+docker compose up
+"""
 
 [tasks.lint]
 description = "Run linters"
