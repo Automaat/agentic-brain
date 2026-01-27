@@ -170,7 +170,9 @@ class BrainAgent:
         mcp_tools = await self.mcp_manager.get_available_tools()
 
         if mcp_tools:
-            tool_list = "\n".join([f"- {tool['name']}: {tool.get('description', 'No description')}" for tool in mcp_tools])
+            tool_list = "\n".join(
+                [f"- {tool['name']}: {tool.get('description', 'No description')}" for tool in mcp_tools]
+            )
             base_prompt = f"""You are a helpful AI assistant with access to the following MCP tools:
 
 {tool_list}
