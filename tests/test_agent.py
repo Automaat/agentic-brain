@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage
 
-from src.agent import BrainAgent
+from src.agent import AgentState, BrainAgent
 
 
 @pytest.fixture
@@ -164,14 +164,28 @@ def test_should_continue_with_tool_calls(agent):
         tool_calls=[ToolCall(name="test_tool", args={}, id="123", type="tool_call")],
     )
 
-    result = agent._should_continue({"messages": [message_with_tools]})
+    state = AgentState(
+        messages=[message_with_tools],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
+    result = agent._should_continue(state)
     assert result == "continue"
 
 
 def test_should_continue_without_tool_calls(agent):
     message_without_tools = AIMessage(content="No tools needed")
 
-    result = agent._should_continue({"messages": [message_without_tools]})
+    state = AgentState(
+        messages=[message_without_tools],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
+    result = agent._should_continue(state)
     assert result == "end"
 
 
@@ -227,7 +241,13 @@ async def test_call_model_with_tools(agent):
     agent.model.bind_tools = MagicMock(return_value=agent.model)
     agent.model.ainvoke = AsyncMock(return_value=mock_response)
 
-    state = {"messages": [HumanMessage(content="Test")]}
+    state = AgentState(
+        messages=[HumanMessage(content="Test")],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
     result = await agent._call_model(state)
 
     assert result["messages"][0] == mock_response
@@ -242,7 +262,13 @@ async def test_call_model_without_tools(agent):
     mock_response = AIMessage(content="Response")
     agent.model.ainvoke = AsyncMock(return_value=mock_response)
 
-    state = {"messages": [HumanMessage(content="Test")]}
+    state = AgentState(
+        messages=[HumanMessage(content="Test")],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
     result = await agent._call_model(state)
 
     assert result["messages"][0] == mock_response
@@ -257,7 +283,13 @@ async def test_execute_tools_success(agent):
     agent.mcp_manager.get_available_tools = AsyncMock(return_value=[{"name": "read_file", "server": "filesystem"}])
     agent.mcp_manager.call_tool = AsyncMock(return_value={"content": "file content"})
 
-    state = {"messages": [message_with_tool]}
+    state = AgentState(
+        messages=[message_with_tool],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
     result = await agent._execute_tools(state)
 
     assert len(result["messages"]) == 1
@@ -274,7 +306,13 @@ async def test_execute_tools_not_found(agent):
 
     agent.mcp_manager.get_available_tools = AsyncMock(return_value=[{"name": "other_tool", "server": "test"}])
 
-    state = {"messages": [message_with_tool]}
+    state = AgentState(
+        messages=[message_with_tool],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
     result = await agent._execute_tools(state)
 
     assert len(result["messages"]) == 1
@@ -291,7 +329,13 @@ async def test_execute_tools_exception(agent):
     agent.mcp_manager.get_available_tools = AsyncMock(return_value=[{"name": "failing_tool", "server": "test"}])
     agent.mcp_manager.call_tool = AsyncMock(side_effect=Exception("Tool execution failed"))
 
-    state = {"messages": [message_with_tool]}
+    state = AgentState(
+        messages=[message_with_tool],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
     result = await agent._execute_tools(state)
 
     assert len(result["messages"]) == 1
@@ -302,7 +346,13 @@ async def test_execute_tools_exception(agent):
 async def test_execute_tools_no_tool_calls(agent):
     message = AIMessage(content="No tools")
 
-    state = {"messages": [message]}
+    state = AgentState(
+        messages=[message],
+        user_id="test",
+        session_id="test",
+        interface="api",
+        language="en",
+    )
     result = await agent._execute_tools(state)
 
     assert result["messages"] == []
