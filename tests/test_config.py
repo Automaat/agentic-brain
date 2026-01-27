@@ -1,9 +1,6 @@
 import os
 from unittest.mock import patch
 
-import pytest
-from pydantic_core import ValidationError
-
 from src.config import Settings
 
 
