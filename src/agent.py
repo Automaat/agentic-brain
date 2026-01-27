@@ -164,10 +164,21 @@ class BrainAgent:
 
         return "end"
 
-    def _build_system_prompt(self, interface: str, language: str) -> str:
+    async def _build_system_prompt(self, interface: str, language: str) -> str:
         """Build system prompt based on interface and language"""
-        base_prompt = """You are a helpful AI assistant with access to various tools and systems.
-You can help with tasks, answer questions, and interact with connected services."""
+        # Get available tools to include in prompt
+        mcp_tools = await self.mcp_manager.get_available_tools()
+
+        if mcp_tools:
+            tool_list = "\n".join([f"- {tool['name']}: {tool.get('description', 'No description')}" for tool in mcp_tools])
+            base_prompt = f"""You are a helpful AI assistant with access to the following MCP tools:
+
+{tool_list}
+
+You can help with tasks, answer questions, and interact with connected services using these tools."""
+        else:
+            base_prompt = """You are a helpful AI assistant. Note: Currently, no MCP tools are available.
+You can still help with tasks and answer questions based on your knowledge."""
 
         interface_prompts = {
             "voice": "The user is interacting via voice. Keep responses concise and conversational.",
@@ -218,7 +229,7 @@ You can help with tasks, answer questions, and interact with connected services.
         """Process a chat message through the agentic loop"""
         try:
             # Build system prompt
-            system_prompt = self._build_system_prompt(interface, language)
+            system_prompt = await self._build_system_prompt(interface, language)
 
             # Convert history to messages
             messages: list[BaseMessage] = [SystemMessage(content=system_prompt)]
