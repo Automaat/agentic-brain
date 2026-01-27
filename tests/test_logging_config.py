@@ -2,8 +2,6 @@
 
 import logging
 
-import structlog
-
 from src.logging_config import add_request_id, get_logger, request_id_var, setup_logging
 
 
