@@ -76,6 +76,9 @@ async def add_request_id_middleware(request: Request, call_next):  # type: ignor
         request_id_var.reset(token)
 
 
+if settings.llm_provider == "anthropic" and not settings.anthropic_api_key:
+    raise ValueError("ANTHROPIC_API_KEY required for anthropic provider")
+
 state_manager = StateManager(settings.redis_host, settings.redis_port, settings.redis_db)
 mcp_manager = MCPManager(settings.mcp_servers)
 agent = BrainAgent(settings.anthropic_api_key, mcp_manager)

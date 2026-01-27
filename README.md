@@ -28,6 +28,42 @@ mise run health
 mise run chat
 ```
 
+## Local Testing with Ollama
+
+Test without burning Anthropic tokens using Ollama for local LLM:
+
+```bash
+# Install and setup
+mise install ollama
+mise run ollama:pull  # Downloads llama3.1:8b + qwen2.5-coder:7b
+
+# Start Ollama server
+mise run ollama:serve
+
+# Configure provider
+echo "LLM_PROVIDER=ollama" >> .env
+
+# Start brain with Ollama
+mise run build
+mise run up
+```
+
+**Recommended models:**
+- `llama3.1:8b` - General purpose, good tool calling
+- `qwen2.5-coder:7b` - Code-focused tasks
+
+**Limitations:**
+- Ollama for testing only, Claude for production
+- Tool calling quality inferior to Claude
+- Requires local resources (8GB+ RAM per model)
+- Not all models support tool calling
+
+**Switch back to Anthropic:**
+```bash
+# In .env
+LLM_PROVIDER=anthropic
+```
+
 ## Architecture
 
 Central "brain" service with pluggable interfaces:
@@ -234,14 +270,23 @@ Prometheus metrics in text format.
 Create `.env` file:
 
 ```bash
-# Required
-ANTHROPIC_API_KEY=sk-ant-...
-HOMELAB_TAILSCALE_IP=100.x.y.z
+# LLM Provider
+LLM_PROVIDER=anthropic  # anthropic|ollama
 
-# Optional
+# Anthropic (production)
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Ollama (local testing - use host.docker.internal for Docker)
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=llama3.1:8b
+
+# Services
+HOMELAB_TAILSCALE_IP=100.x.y.z
 TODOIST_API_TOKEN=...
 REDIS_HOST=host.docker.internal
 REDIS_PORT=6379
+
+# Logging
 LOG_LEVEL=INFO
 LOG_JSON=true
 ```

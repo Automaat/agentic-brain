@@ -29,13 +29,26 @@ class BrainAgent:
     def __init__(self, api_key: str, mcp_manager: MCPManager):
         self.api_key = api_key
         self.mcp_manager = mcp_manager
-        self.model = ChatAnthropic(
-            api_key=api_key,
-            model_name=settings.default_model,
-            max_tokens=settings.max_tokens,
-            temperature=settings.temperature,
-        )
+        self.model = self._create_llm_model()
         self.graph = self._build_graph()
+
+    def _create_llm_model(self):
+        """Create LLM model based on configured provider"""
+        if settings.llm_provider == "ollama":
+            from langchain_ollama import ChatOllama
+
+            return ChatOllama(
+                model=settings.ollama_model,
+                base_url=settings.ollama_base_url,
+                temperature=settings.temperature,
+            )
+        else:
+            return ChatAnthropic(
+                api_key=self.api_key,
+                model_name=settings.default_model,
+                max_tokens=settings.max_tokens,
+                temperature=settings.temperature,
+            )
 
     def _build_graph(self) -> Any:
         """Build the LangGraph workflow"""
