@@ -1,4 +1,3 @@
-import logging
 from typing import Annotated, Any, Literal
 
 from langchain_anthropic import ChatAnthropic
@@ -8,9 +7,10 @@ from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 from .config import settings
+from .logging_config import get_logger
 from .mcp_client import MCPManager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class AgentState(TypedDict):
@@ -86,6 +86,12 @@ class BrainAgent:
 
         # Get MCP tools and bind to model
         mcp_tools = await self.mcp_manager.get_available_tools()
+        logger.debug(
+            "Calling model",
+            tool_count=len(mcp_tools),
+            session_id=state.get("session_id"),
+        )
+
         if mcp_tools:
             lc_tools = self._convert_mcp_tools_to_langchain(mcp_tools)
             model_with_tools = self.model.bind_tools(lc_tools)
@@ -118,10 +124,12 @@ class BrainAgent:
                 continue
 
             try:
+                logger.info("Executing tool", tool_name=tool_name, server=server_name)
                 result = await self.mcp_manager.call_tool(server_name, tool_name, args)
                 results.append(ToolMessage(content=str(result), tool_call_id=tool_call["id"]))
+                logger.info("Tool execution succeeded", tool_name=tool_name)
             except Exception as e:
-                logger.error(f"Tool execution failed: {e}", exc_info=True)
+                logger.error("Tool execution failed", tool_name=tool_name, error=str(e), exc_info=True)
                 results.append(ToolMessage(content=f"Error: {e!s}", tool_call_id=tool_call["id"]))
 
         return {"messages": results}
@@ -220,5 +228,5 @@ You can help with tasks, answer questions, and interact with connected services.
             return "I apologize, I couldn't generate a response."
 
         except Exception as e:
-            logger.error(f"Error in chat: {e}", exc_info=True)
+            logger.error("Chat processing failed", session_id=session_id, error=str(e), exc_info=True)
             return "I apologize, I couldn't generate a response. Please try again."

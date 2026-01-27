@@ -28,5 +28,8 @@ class Settings(BaseSettings):
     max_tokens: int = 4096
     temperature: float = 0.7
 
+    log_level: str = "INFO"
+    log_json: bool = True
+
 
 settings = Settings()  # type: ignore[call-arg]

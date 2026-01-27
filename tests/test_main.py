@@ -119,6 +119,14 @@ def test_reset_session_missing_header(client):
     assert response.status_code == 422
 
 
+def test_metrics_endpoint(client):
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    # Prometheus CONTENT_TYPE_LATEST includes version info
+    assert response.headers["content-type"] == "text/plain; version=1.0.0; charset=utf-8"
+    assert b"http_requests_total" in response.content or b"# HELP" in response.content
+
+
 def test_chat_custom_interface(client, mock_state_manager, mock_agent):
     response = client.post(
         "/chat",
