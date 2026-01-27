@@ -121,10 +121,7 @@ def test_reset_session_missing_header(client):
 
 
 def test_history_endpoint_success(client, mock_state_manager):
-    history = [
-        {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi there"}
-    ]
+    history = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi there"}]
     mock_state_manager.get_conversation.return_value = history
 
     response = client.get("/history/session-123")
