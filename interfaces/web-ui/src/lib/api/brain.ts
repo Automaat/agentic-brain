@@ -8,7 +8,7 @@ interface ChatRequest {
 
 interface ChatResponse {
 	response: string;
-	actions: [];
+	actions: string[];
 }
 
 export interface HistoryMessage {
@@ -58,11 +58,15 @@ export async function getHistory(sessionId: string): Promise<HistoryMessage[]> {
 }
 
 export async function resetSession(sessionId: string): Promise<void> {
-	await fetch(`${baseUrl}/reset-session`, {
+	const res = await fetch(`${baseUrl}/reset-session`, {
 		method: 'POST',
 		headers: {
 			'session-id': sessionId,
 			'Content-Type': 'application/json'
 		}
 	});
+
+	if (!res.ok) {
+		throw new Error(`API error: ${res.status}`);
+	}
 }

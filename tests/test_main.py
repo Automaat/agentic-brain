@@ -120,6 +120,30 @@ def test_reset_session_missing_header(client):
     assert response.status_code == 422
 
 
+def test_history_endpoint_success(client, mock_state_manager):
+    history = [
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there"}
+    ]
+    mock_state_manager.get_conversation.return_value = history
+
+    response = client.get("/history/session-123")
+
+    assert response.status_code == 200
+    assert response.json() == history
+    mock_state_manager.get_conversation.assert_called_once_with("session-123")
+
+
+def test_history_endpoint_empty(client, mock_state_manager):
+    mock_state_manager.get_conversation.return_value = []
+
+    response = client.get("/history/session-empty")
+
+    assert response.status_code == 200
+    assert response.json() == []
+    mock_state_manager.get_conversation.assert_called_once_with("session-empty")
+
+
 def test_metrics_endpoint(client):
     response = client.get("/metrics")
     assert response.status_code == 200
