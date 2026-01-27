@@ -25,7 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             response = await client.get(f"{brain_url}/health", timeout=5.0)
             response.raise_for_status()
             _LOGGER.info("Connected to brain service at %s", brain_url)
-    except (httpx.HTTPError, httpx.TimeoutException) as err:
+    except (httpx.HTTPError, httpx.TimeoutError) as err:
         _LOGGER.error("Failed to connect to brain service: %s", err)
         raise ConfigEntryNotReady(f"Cannot connect to brain service: {err}") from err
 

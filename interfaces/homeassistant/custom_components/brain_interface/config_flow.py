@@ -1,5 +1,6 @@
 """Config flow for Brain Interface integration."""
 
+import logging
 from typing import Any
 
 import httpx
@@ -19,6 +20,8 @@ from .const import (
     DOMAIN,
     SUPPORTED_LANGUAGES,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class BrainInterfaceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -42,9 +45,10 @@ class BrainInterfaceConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title=user_input.get(CONF_NAME, "Brain Interface"),
                     data=user_input,
                 )
-            except (httpx.HTTPError, httpx.TimeoutException):
+            except (httpx.HTTPError, httpx.TimeoutError):
                 errors["base"] = "cannot_connect"
             except Exception:  # noqa: BLE001
+                _LOGGER.exception("Unexpected error during brain service validation")
                 errors["base"] = "unknown"
 
         # Show form

@@ -137,7 +137,7 @@ Sessions are automatically created based on conversation IDs:
 
 1. Start Brain service:
    ```bash
-   cd ~/sideprojects/agentic-brain
+   cd /path/to/agentic-brain
    mise run up
    ```
 

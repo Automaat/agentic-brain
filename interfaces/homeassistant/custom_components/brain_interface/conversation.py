@@ -1,6 +1,7 @@
 """Conversation platform for Brain Interface."""
 
 import logging
+import uuid
 from typing import Literal
 
 import httpx
@@ -16,6 +17,7 @@ from .const import (
     CONF_USER_ID,
     DEFAULT_LANGUAGE,
 )
+from .translations import get_message
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,10 +51,11 @@ class BrainConversationAgent(conversation.ConversationEntity):
         brain_url = config[CONF_BRAIN_URL]
         user_id = config[CONF_USER_ID]
         session_prefix = config.get(CONF_SESSION_PREFIX, "ha")
-        language = config.get(CONF_LANGUAGE, DEFAULT_LANGUAGE)
+        language = user_input.language if user_input.language != "*" else config.get(CONF_LANGUAGE, DEFAULT_LANGUAGE)
 
-        # Build session ID from conversation ID
-        session_id = f"{session_prefix}_{user_input.conversation_id}"
+        # Build session ID from conversation ID (generate UUID if None)
+        conversation_id = user_input.conversation_id or str(uuid.uuid4())
+        session_id = f"{session_prefix}_{conversation_id}"
 
         try:
             # Call brain API
@@ -72,7 +75,7 @@ class BrainConversationAgent(conversation.ConversationEntity):
             data = response.json()
 
             # Extract response text
-            response_text = data.get("response", "Sorry, I couldn't process that.")
+            response_text = data.get("response", get_message(language, "no_response"))
 
             _LOGGER.debug(
                 "Brain response for session %s: %s",
@@ -85,17 +88,17 @@ class BrainConversationAgent(conversation.ConversationEntity):
                     speech={"plain": {"speech": response_text}},
                     language=language,
                 ),
-                conversation_id=user_input.conversation_id,
+                conversation_id=conversation_id,
             )
 
         except httpx.HTTPError as err:
             _LOGGER.error("Error calling brain API: %s", err)
             return conversation.ConversationResult(
                 response=conversation.ConversationResponse(
-                    speech={"plain": {"speech": "Sorry, I'm having trouble connecting to the brain service."}},
+                    speech={"plain": {"speech": get_message(language, "connection_error")}},
                     language=language,
                 ),
-                conversation_id=user_input.conversation_id,
+                conversation_id=conversation_id,
             )
 
     async def async_will_remove_from_hass(self) -> None:
