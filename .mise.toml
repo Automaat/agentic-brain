@@ -242,3 +242,23 @@ run = "launchctl list | grep telegram-bot || echo 'Service not running'"
 [tasks."telegram:logs"]
 description = "View telegram bot logs"
 run = "tail -f logs/telegram-bot.log"
+
+# Web UI tasks
+[tasks."web-ui:build"]
+description = "Build web UI Docker image"
+run = "docker compose build web-ui"
+
+[tasks."web-ui:up"]
+description = "Start web UI"
+run = """
+docker compose up -d web-ui
+echo "Web UI: http://localhost:3000"
+"""
+
+[tasks."web-ui:logs"]
+description = "View web UI logs"
+run = "docker compose logs -f web-ui"
+
+[tasks."web-ui:restart"]
+description = "Restart web UI"
+run = "docker compose restart web-ui"

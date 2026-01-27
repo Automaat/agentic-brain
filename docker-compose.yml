@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:7-alpine
@@ -61,6 +59,22 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
+
+  web-ui:
+    build:
+      context: ./interfaces/web-ui
+      dockerfile: Dockerfile
+    container_name: brain-web-ui
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - brain
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   redis-data:

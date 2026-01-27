@@ -187,6 +187,13 @@ async def chat(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@app.get("/history/{session_id}")
+async def get_history(session_id: str) -> list[dict[str, str]]:
+    logger.info("History requested", session_id=session_id)
+    history = state_manager.get_conversation(session_id)
+    return history
+
+
 @app.post("/reset-session")
 async def reset_session(session_id: Annotated[str, Header()]) -> dict[str, str]:
     logger.info("Session reset requested", session_id=session_id)
