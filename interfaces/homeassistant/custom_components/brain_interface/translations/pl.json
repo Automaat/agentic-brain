@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja Brain Interface",
+        "description": "Połącz Home Assistant z usługą Brain",
+        "data": {
+          "name": "Nazwa integracji",
+          "brain_url": "URL usługi Brain",
+          "user_id": "ID użytkownika",
+          "session_prefix": "Prefiks sesji",
+          "language": "Domyślny język"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie udało się połączyć z usługą Brain. Sprawdź URL i upewnij się, że usługa działa.",
+      "unknown": "Wystąpił nieoczekiwany błąd"
+    },
+    "abort": {
+      "already_configured": "Brain Interface jest już skonfigurowany"
+    }
+  }
+}
