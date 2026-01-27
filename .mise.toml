@@ -1,17 +1,27 @@
 [tools]
 python = "3.14.2"
 uv = "0.9.27"
+ollama = "0.15.2"
 
 [env]
 _.python.venv = { path = ".venv", create = true }
 
 [tasks.setup]
-description = "Initial setup"
+description = "Initial setup (Anthropic provider)"
 run = """
 brew install orbstack redis
 brew services start redis
+mkdir -p logs
 uv sync
 echo "Setup complete! Next: mise run build && mise run up"
+echo "For local LLM: mise run setup-ollama && mise run ollama:pull && LLM_PROVIDER=ollama mise run up"
+"""
+
+[tasks.setup-ollama]
+description = "Setup Ollama for local LLM"
+run = """
+mise install ollama
+echo "Ollama installed. Next: mise run ollama:pull"
 """
 
 [tasks.sync]
@@ -78,6 +88,59 @@ run = "docker stats brain-service --no-stream"
 [tasks.redis-cli]
 description = "Redis CLI"
 run = "redis-cli"
+
+[tasks."ollama:setup"]
+description = "Setup Ollama"
+run = """
+mkdir -p logs
+mise install ollama
+if pgrep -f 'ollama serve' > /dev/null; then
+  echo "Ollama already running"
+else
+  ollama serve > logs/ollama.log 2>&1 &
+  sleep 2
+  if pgrep -f 'ollama serve' > /dev/null; then
+    echo "Ollama started successfully"
+  else
+    echo "Failed to start Ollama - check logs/ollama.log"
+    exit 1
+  fi
+fi
+echo "Next: mise run ollama:pull"
+"""
+
+[tasks."ollama:pull"]
+description = "Pull recommended models"
+run = """
+ollama pull llama3.1:8b
+ollama pull qwen2.5-coder:7b
+echo "Models pulled. Test with: LLM_PROVIDER=ollama mise run up"
+"""
+
+[tasks."ollama:serve"]
+description = "Start Ollama server"
+run = """
+if pgrep -f 'ollama serve' > /dev/null; then
+  echo "Ollama already running"
+else
+  ollama serve > logs/ollama.log 2>&1 &
+  sleep 2
+  if pgrep -f 'ollama serve' > /dev/null; then
+    echo "Ollama started successfully"
+  else
+    echo "Failed to start Ollama - check logs/ollama.log"
+    exit 1
+  fi
+fi
+"""
+
+[tasks."ollama:stop"]
+description = "Stop Ollama server"
+run = "pkill -f 'ollama serve'"
+
+[tasks."ollama:list"]
+description = "List installed models"
+run = "ollama list"
 
 [tasks.lint]
 description = "Run linters"
