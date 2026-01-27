@@ -16,13 +16,15 @@ class Settings(BaseSettings):
 
     @property
     def mcp_servers(self) -> dict[str, str]:
-        return {
+        servers = {
             "filesystem": "http://host.docker.internal:8001/sse",
             "shell": "http://host.docker.internal:8002/sse",
             "browser": "http://host.docker.internal:8003/sse",
-            "homeassistant": f"http://{self.homelab_tailscale_ip}:8010/sse",
             "todoist": "http://host.docker.internal:8011/sse",
         }
+        if self.homelab_tailscale_ip:
+            servers["homeassistant"] = f"http://{self.homelab_tailscale_ip}:8010/sse"
+        return servers
 
     brain_host: str = "0.0.0.0"
     brain_port: int = 8000

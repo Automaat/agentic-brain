@@ -7,15 +7,21 @@ ollama = "0.15.2"
 _.python.venv = { path = ".venv", create = true }
 
 [tasks.setup]
-description = "Initial setup"
+description = "Initial setup (Anthropic provider)"
 run = """
 brew install orbstack redis
 brew services start redis
-mise install ollama
 mkdir -p logs
 uv sync
 echo "Setup complete! Next: mise run build && mise run up"
-echo "For local LLM: mise run ollama:pull && LLM_PROVIDER=ollama mise run up"
+echo "For local LLM: mise run setup-ollama && mise run ollama:pull && LLM_PROVIDER=ollama mise run up"
+"""
+
+[tasks.setup-ollama]
+description = "Setup Ollama for local LLM"
+run = """
+mise install ollama
+echo "Ollama installed. Next: mise run ollama:pull"
 """
 
 [tasks.sync]
@@ -88,8 +94,19 @@ description = "Setup Ollama"
 run = """
 mkdir -p logs
 mise install ollama
-ollama serve > logs/ollama.log 2>&1 &
-echo "Ollama started. Pull model: mise run ollama:pull"
+if pgrep -f 'ollama serve' > /dev/null; then
+  echo "Ollama already running"
+else
+  ollama serve > logs/ollama.log 2>&1 &
+  sleep 2
+  if pgrep -f 'ollama serve' > /dev/null; then
+    echo "Ollama started successfully"
+  else
+    echo "Failed to start Ollama - check logs/ollama.log"
+    exit 1
+  fi
+fi
+echo "Next: mise run ollama:pull"
 """
 
 [tasks."ollama:pull"]
@@ -102,7 +119,20 @@ echo "Models pulled. Test with: LLM_PROVIDER=ollama mise run up"
 
 [tasks."ollama:serve"]
 description = "Start Ollama server"
-run = "ollama serve > logs/ollama.log 2>&1 &"
+run = """
+if pgrep -f 'ollama serve' > /dev/null; then
+  echo "Ollama already running"
+else
+  ollama serve > logs/ollama.log 2>&1 &
+  sleep 2
+  if pgrep -f 'ollama serve' > /dev/null; then
+    echo "Ollama started successfully"
+  else
+    echo "Failed to start Ollama - check logs/ollama.log"
+    exit 1
+  fi
+fi
+"""
 
 [tasks."ollama:stop"]
 description = "Stop Ollama server"

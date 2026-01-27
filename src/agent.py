@@ -6,6 +6,11 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
+try:
+    from langchain_ollama import ChatOllama
+except ImportError:
+    ChatOllama = None  # type: ignore[misc,assignment]
+
 from .config import settings
 from .logging_config import get_logger
 from .mcp_client import MCPManager
@@ -26,7 +31,7 @@ class AgentState(TypedDict):
 class BrainAgent:
     """LangGraph agentic loop with Claude Sonnet 4.5"""
 
-    def __init__(self, api_key: str, mcp_manager: MCPManager):
+    def __init__(self, api_key: str | None, mcp_manager: MCPManager):
         self.api_key = api_key
         self.mcp_manager = mcp_manager
         self.model = self._create_llm_model()
@@ -35,8 +40,8 @@ class BrainAgent:
     def _create_llm_model(self):
         """Create LLM model based on configured provider"""
         if settings.llm_provider == "ollama":
-            from langchain_ollama import ChatOllama
-
+            if ChatOllama is None:
+                raise ImportError("langchain-ollama not installed")
             return ChatOllama(
                 model=settings.ollama_model,
                 base_url=settings.ollama_base_url,

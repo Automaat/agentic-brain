@@ -79,9 +79,21 @@ async def add_request_id_middleware(request: Request, call_next):  # type: ignor
 if settings.llm_provider == "anthropic" and not settings.anthropic_api_key:
     raise ValueError("ANTHROPIC_API_KEY required for anthropic provider")
 
+if settings.llm_provider == "ollama":
+    import httpx
+
+    try:
+        response = httpx.get(f"{settings.ollama_base_url}/api/tags", timeout=5.0)
+        response.raise_for_status()
+    except Exception as e:
+        raise ValueError(f"Ollama server not accessible at {settings.ollama_base_url}: {e}") from e
+
 state_manager = StateManager(settings.redis_host, settings.redis_port, settings.redis_db)
 mcp_manager = MCPManager(settings.mcp_servers)
-agent = BrainAgent(settings.anthropic_api_key, mcp_manager)
+agent = BrainAgent(
+    settings.anthropic_api_key if settings.llm_provider == "anthropic" else None,
+    mcp_manager,
+)
 
 
 class ChatRequest(BaseModel):
