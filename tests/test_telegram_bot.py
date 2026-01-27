@@ -4,19 +4,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+import pytest_asyncio
 from telegram import Chat, Message, Update, User
 
 from interfaces.telegram.bot import BrainTelegramBot
 
 
-@pytest.fixture
-def bot():
+@pytest_asyncio.fixture
+async def bot():
     """Create bot instance for testing"""
-    return BrainTelegramBot(
+    bot_instance = BrainTelegramBot(
         token="test_token",
         brain_url="http://localhost:8000",
         allowed_user_ids=[12345],
     )
+    try:
+        yield bot_instance
+    finally:
+        await bot_instance.close()
 
 
 @pytest.fixture
@@ -106,6 +111,13 @@ class TestBrainTelegramBot:
     async def test_lang_command_invalid(self, bot, mock_update, mock_context):
         """Test /lang command with invalid language"""
         mock_context.args = ["fr"]
+        await bot.lang_command(mock_update, mock_context)
+        call_args = mock_update.message.reply_text.call_args[0][0]
+        assert "Usage" in call_args
+
+    async def test_lang_command_no_args(self, bot, mock_update, mock_context):
+        """Test /lang command with no arguments"""
+        mock_context.args = []
         await bot.lang_command(mock_update, mock_context)
         call_args = mock_update.message.reply_text.call_args[0][0]
         assert "Usage" in call_args

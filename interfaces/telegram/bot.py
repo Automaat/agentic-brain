@@ -11,10 +11,6 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 from .config import settings
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
 logger = logging.getLogger(__name__)
 
 
@@ -163,7 +159,7 @@ Commands:
 
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle errors"""
-        logger.error(f"Update {update} caused error: {context.error}")
+        logger.error(f"Error occurred: {context.error}")
 
     def build_application(self) -> Application:
         """Build and configure the bot application"""
@@ -187,6 +183,11 @@ Commands:
 
 async def main() -> None:
     """Main entry point"""
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.INFO,
+    )
+
     bot = BrainTelegramBot(
         token=settings.telegram_bot_token,
         brain_url=settings.brain_api_url,
@@ -212,7 +213,3 @@ async def main() -> None:
         await application.stop()
         await application.shutdown()
         await bot.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

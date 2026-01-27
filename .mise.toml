@@ -104,14 +104,14 @@ run = "uv sync --extra telegram"
 description = "Start telegram bot"
 run = """
 cd interfaces/telegram
-uv run --extra telegram python -m bot
+uv run --extra telegram python -m .
 """
 
 [tasks."telegram:install-service"]
 description = "Install telegram bot as LaunchAgent (macOS)"
 run = """
 mkdir -p ~/Library/LaunchAgents
-cat > ~/Library/LaunchAgents/com.agentic-brain.telegram-bot.plist << 'EOF'
+cat > ~/Library/LaunchAgents/com.agentic-brain.telegram-bot.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -122,18 +122,18 @@ cat > ~/Library/LaunchAgents/com.agentic-brain.telegram-bot.plist << 'EOF'
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd $HOME/sideprojects/agentic-brain/interfaces/telegram && source $HOME/sideprojects/agentic-brain/.venv/bin/activate && python -m bot</string>
+        <string>cd $PWD/interfaces/telegram && source $PWD/.venv/bin/activate && python -m .</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>$HOME/sideprojects/agentic-brain/logs/telegram-bot.log</string>
+    <string>$PWD/logs/telegram-bot.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/sideprojects/agentic-brain/logs/telegram-bot.error.log</string>
+    <string>$PWD/logs/telegram-bot.error.log</string>
     <key>WorkingDirectory</key>
-    <string>$HOME/sideprojects/agentic-brain/interfaces/telegram</string>
+    <string>$PWD/interfaces/telegram</string>
 </dict>
 </plist>
 EOF

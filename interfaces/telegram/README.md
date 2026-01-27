@@ -33,7 +33,7 @@ mise run telegram:start
 
 # Option 2: Direct Python
 cd interfaces/telegram
-python -m bot
+python -m .
 ```
 
 ## Usage
@@ -86,7 +86,7 @@ User (Telegram) → Bot → Brain Service (localhost:8000) → Claude API
 Run with auto-reload:
 ```bash
 cd interfaces/telegram
-python -m bot
+python -m .
 ```
 
 View logs:
