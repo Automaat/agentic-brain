@@ -98,12 +98,13 @@ async def test_convert_history_to_messages(agent):
     assert messages[2].content == "System message"
 
 
-def test_build_system_prompt(agent):
-    prompt = agent._build_system_prompt("voice", "pl")
+async def test_build_system_prompt(agent):
+    agent.mcp_manager.get_available_tools = AsyncMock(return_value=[])
+    prompt = await agent._build_system_prompt("voice", "pl")
     assert "voice" in prompt.lower() or "concise" in prompt.lower()
     assert "Polish" in prompt or "pl" in prompt.lower()
 
-    prompt_api = agent._build_system_prompt("api", "en")
+    prompt_api = await agent._build_system_prompt("api", "en")
     assert len(prompt_api) > 0
 
 
@@ -126,6 +127,7 @@ async def test_chat_error_handling(agent):
 async def test_chat_empty_response(agent):
     # Mock graph to return empty messages
     agent.graph.ainvoke = AsyncMock(return_value={"messages": []})
+    agent.mcp_manager.get_available_tools = AsyncMock(return_value=[])
 
     response = await agent.chat(
         message="Test",
@@ -142,6 +144,7 @@ async def test_chat_empty_response(agent):
 async def test_chat_empty_content(agent):
     # Mock graph to return message with empty content
     agent.graph.ainvoke = AsyncMock(return_value={"messages": [AIMessage(content="")]})
+    agent.mcp_manager.get_available_tools = AsyncMock(return_value=[])
 
     response = await agent.chat(
         message="Test",
