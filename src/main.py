@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request, Response
+from prometheus_client import CONTENT_TYPE_LATEST
 from pydantic import BaseModel
 
 from .agent import BrainAgent
@@ -12,7 +13,6 @@ from .health import check_health
 from .logging_config import get_logger, request_id_var, setup_logging
 from .mcp_client import MCPManager
 from .metrics import (
-    CONTENT_TYPE_LATEST,
     chat_duration_seconds,
     chat_errors_total,
     chat_requests_total,

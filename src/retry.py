@@ -40,9 +40,7 @@ def retry_on_network_error(
         retry_decorator = retry(
             stop=stop_after_attempt(max_attempts),
             wait=wait_exponential(multiplier=1, min=min_wait_seconds, max=max_wait_seconds),
-            retry=retry_if_exception_type(
-                (ConnectionError, TimeoutError, httpx.RequestError, httpx.TimeoutException)
-            ),
+            retry=retry_if_exception_type((ConnectionError, TimeoutError, httpx.RequestError, httpx.TimeoutException)),
             reraise=True,
             before_sleep=lambda retry_state: logger.warning(
                 "Retrying after error",
