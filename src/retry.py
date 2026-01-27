@@ -1,8 +1,8 @@
 """Retry utilities with exponential backoff."""
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from tenacity import (
     retry,
@@ -49,7 +49,7 @@ def retry_on_network_error(
         )
         @wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> T:
-            return await func(*args, **kwargs)
+            return await cast(Awaitable[T], func(*args, **kwargs))
 
         @wraps(func)
         def sync_wrapper(*args: Any, **kwargs: Any) -> T:
@@ -96,7 +96,7 @@ def retry_on_anthropic_error(
         )
         @wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> T:
-            return await func(*args, **kwargs)
+            return await cast(Awaitable[T], func(*args, **kwargs))
 
         @wraps(func)
         def sync_wrapper(*args: Any, **kwargs: Any) -> T:
