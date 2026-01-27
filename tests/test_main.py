@@ -184,7 +184,6 @@ def test_startup_validation_anthropic_missing_key():
     with patch.dict(os.environ, {"LLM_PROVIDER": "anthropic", "ANTHROPIC_API_KEY": ""}, clear=True):
         with patch("src.main.StateManager"), patch("src.main.MCPManager"), patch("src.main.BrainAgent"):
             with pytest.raises(ValueError, match="ANTHROPIC_API_KEY required"):
-                import importlib
                 import sys
 
                 # Remove cached module
