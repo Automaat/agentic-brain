@@ -20,7 +20,7 @@ class Settings(BaseSettings):
             "filesystem": "http://host.docker.internal:8001/sse",
             "shell": "http://host.docker.internal:8002/sse",
             "browser": "http://host.docker.internal:8003/sse",
-            "todoist": "http://host.docker.internal:8011/sse",
+            "todoist": "http://host.docker.internal:8011/mcp/sse",
         }
         if self.homelab_tailscale_ip:
             servers["homeassistant"] = f"http://{self.homelab_tailscale_ip}:8010/sse"
