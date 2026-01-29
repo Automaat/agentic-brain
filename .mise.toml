@@ -1,6 +1,6 @@
 [tools]
 python = "3.14.2"
-uv = "0.9.27"
+uv = "0.9.28"
 ollama = "0.15.2"
 
 [env]
