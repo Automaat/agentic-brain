@@ -10,7 +10,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:0.9.28@sha256:3afd9017d8cfe0f9749afdedeb6c39a3896388fdfb1bd43434d9d5e83f7a20b7 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.2@sha256:596e7ea716217d76ff7ddfb8695833f7cb2a8d6589af32114a1b4a95c081fd4d /uv /usr/local/bin/uv
 
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
